@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard Monitoring IoT</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='stylee.css') }}">
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    #notifikasi-container {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      z-index: 9999;
+    }
+
+    .notifikasi-alert {
+      background: #ffe5e5;
+      border-left: 5px solid #ff4d4d;
+      padding: 12px 16px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      min-width: 250px;
+    }
+
+    footer {
+      margin-top: auto;
+    }
+  </style>
+</head>
+<body>
+
+<div class="d-flex">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h4 class="mb-4"><i class="fas fa-microchip me-2"></i>IoT Dashboard</h4>
+    <a href="/"><i class="fas fa-chart-line me-2"></i>Monitoring</a>
+    <a href="/export/csv"><i class="fas fa-file-csv me-2"></i>Export CSV</a>
+    <a href="#"><i class="fas fa-sign-out-alt me-2"></i>Logout</a>
+  </div>
+
+  <!-- Main Content -->
+  <div class="flex-grow-1 p-4">
+    <div class="header d-flex flex-column flex-md-row align-items-center mb-4">
+      <img src="/static/gambar.png" alt="Logo" class="img-fluid me-md-4 mb-3 mb-md-0" style="max-height: 70px;">
+      <div>
+        <h4 class="fw-bold mb-1">Selamat Datang Irsyad 👋</h4>
+        <p class="mb-0">Dashboard Monitoring Sensor BME280 kamu dalam 10 menit terakhir.</p>
+      </div>
+    </div>
+
+    <!-- Ringkasan Sensor -->
+    <div class="row g-3 mb-4">
+      <div class="col-sm-6 col-lg-3">
+        <div class="summary-card">
+          <div>Suhu (°C)</div>
+          <div class="summary-value text-primary" id="suhu-terakhir">--</div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="summary-card">
+          <div>Kelembapan (%)</div>
+          <div class="summary-value text-success" id="kelembapan-terakhir">--</div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="summary-card">
+          <div>Tekanan (hPa)</div>
+          <div class="summary-value text-warning" id="tekanan-terakhir">--</div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="summary-card">
+          <div>Ketinggian (m)</div>
+          <div class="summary-value text-secondary" id="altitude-terakhir">--</div>
+        </div>
+      </div>
+
+      <div class="col-sm-6 col-lg-3">
+        <div class="summary-card">
+          <div>Kualitas & Status Udara</div>
+          <div class="summary-value text-danger" id="status-kualitas-udara">--</div>
+        </div>
+      </div>
+
+      <div class="col-sm-6 col-lg-3">
+        <div class="summary-card">
+          <div>Kebakaran</div>
+          <div class="summary-value text-danger" id="kebakaran-terakhir">--</div>
+        </div>
+      </div>
+
+      <div class="col-sm-6 col-lg-3">
+        <div class="summary-card">
+          <div>Jarak (cm)</div>
+          <div class="summary-value text-info" id="shcr04-jarak">--</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Judul Grafik -->
+    <h5 class="mb-4 text-center fw-bold">Grafik Sensor BME280 (10 Menit Terakhir)</h5>
+
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="card p-3">
+          <h6 class="text-center">Suhu (°C)</h6>
+          <canvas id="chart-suhu" height="180"></canvas>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card p-3">
+          <h6 class="text-center">Kelembapan (%)</h6>
+          <canvas id="chart-kelembapan" height="180"></canvas>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card p-3">
+          <h6 class="text-center">Tekanan Udara (hPa)</h6>
+          <canvas id="chart-tekanan" height="180"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Notifikasi Container -->
+<div id="notifikasi-container"></div>
+
+<!-- Footer Real-time Info -->
+<footer class="text-center text-muted py-2 small bg-light" id="footer-info">
+  Tidak ada data yang dihapus.
+</footer>
+
+<!-- JS -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+
+<!-- Real-time notifikasi penghapusan data -->
+<script>
+  const socket = io();
+
+  socket.on('connect', () => {
+    console.log('Terhubung ke server');
+  });
+
+  socket.on('data_deleted', function(data) {
+    const container = document.getElementById("notifikasi-container");
+    const footer = document.getElementById("footer-info");
+
+    if (data.count > 0) {
+      const div = document.createElement("div");
+      div.className = "notifikasi-alert";
+      div.innerHTML = `<strong>${data.count} data lama</strong> telah dihapus pada <strong>${data.time}</strong>`;
+      container.appendChild(div);
+
+      // Update footer info
+      footer.innerText = `${data.count} data lama dihapus pada ${data.time}`;
+
+      // Hapus notifikasi setelah 5 detik
+      setTimeout(() => {
+        div.remove();
+      }, 5000);
+    } else {
+      footer.innerText = "Tidak ada data yang dihapus.";
+    }
+  });
+</script>
+
+</body>
+</html>
