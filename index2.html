@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard Monitoring IoT</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Quicksand', sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-gray-100">
+
+  <!-- Top Navigation -->
+  <div class="bg-blue-600 text-white p-4 flex justify-between items-center">
+    <div class="text-xl font-bold">IoT Dashboard</div>
+    <div class="flex gap-6">
+      <a href="/" class="hover:underline">Monitoring</a>
+      <a href="/export/csv" class="hover:underline">Export CSV</a>
+      <a href="#" class="hover:underline">Logout</a>
+    </div>
+    <div class="text-sm text-right">
+      irsyad@example.com<br><span class="text-gray-200">User</span>
+    </div>
+  </div>
+
+  <!-- Welcome Header -->
+  <div class="p-4 flex flex-col md:flex-row items-center gap-4">
+    <img src="/static/gambar.png" alt="Logo" class="h-16">
+    <div>
+      <h2 class="text-xl font-bold">Selamat Datang Irsyad 👋</h2>
+      <p class="text-sm text-gray-600">Dashboard Monitoring Sensor BME280 kamu dalam 10 menit terakhir.</p>
+    </div>
+  </div>
+
+  <!-- Ringkasan Sensor Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 px-4">
+    <div class="bg-white p-4 rounded shadow text-center">
+      <div class="text-gray-500">Suhu (°C)</div>
+      <div class="text-2xl font-bold text-blue-500" id="suhu-terakhir">--</div>
+    </div>
+    <div class="bg-white p-4 rounded shadow text-center">
+      <div class="text-gray-500">Kelembapan (%)</div>
+      <div class="text-2xl font-bold text-green-500" id="kelembapan-terakhir">--</div>
+    </div>
+    <div class="bg-white p-4 rounded shadow text-center">
+      <div class="text-gray-500">Tekanan (hPa)</div>
+      <div class="text-2xl font-bold text-yellow-500" id="tekanan-terakhir">--</div>
+    </div>
+    <div class="bg-white p-4 rounded shadow text-center">
+      <div class="text-gray-500">Ketinggian (m)</div>
+      <div class="text-2xl font-bold text-gray-600" id="altitude-terakhir">--</div>
+    </div>
+    <div class="bg-white p-4 rounded shadow text-center">
+      <div class="text-gray-500">Kualitas & Status Udara</div>
+      <div class="text-2xl font-bold text-red-500" id="status-kualitas-udara">--</div>
+    </div>
+    <div class="bg-white p-4 rounded shadow text-center">
+      <div class="text-gray-500">Kebakaran</div>
+      <div class="text-2xl font-bold text-red-500" id="kebakaran-terakhir">--</div>
+    </div>
+    <div class="bg-white p-4 rounded shadow text-center">
+      <div class="text-gray-500">Jarak (cm)</div>
+      <div class="text-2xl font-bold text-cyan-500" id="shcr04-jarak">--</div>
+    </div>
+  </div>
+
+  <!-- Chart Section -->
+  <div class="px-4 mt-6">
+    <h3 class="text-center text-lg font-semibold mb-4">Grafik Sensor BME280 (10 Menit Terakhir)</h3>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="bg-white p-4 rounded shadow">
+        <div class="text-center font-semibold mb-2">Suhu (°C)</div>
+        <canvas id="chart-suhu"></canvas>
+      </div>
+      <div class="bg-white p-4 rounded shadow">
+        <div class="text-center font-semibold mb-2">Kelembapan (%)</div>
+        <canvas id="chart-kelembapan" height="180"></canvas>
+      </div>
+      <div class="bg-white p-4 rounded shadow">
+        <div class="text-center font-semibold mb-2">Tekanan Udara (hPa)</div>
+        <canvas id="chart-tekanan" height="180"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notifikasi -->
+  <div id="notifikasi-container" class="px-4 mt-6">
+    <!-- Notifikasi akan muncul di sini -->
+  </div>
+
+  <!-- Footer -->
+  <footer class="text-center text-sm text-gray-500 mt-6 py-2 bg-gray-200" id="footer-info">
+    Tidak ada data yang dihapus.
+  </footer>
+
+  <!-- JS -->
+  <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+  <script>
+    const socket = io();
+    socket.on('connect', () => console.log('Terhubung ke server'));
+    socket.on('data_deleted', function(data) {
+      const container = document.getElementById("notifikasi-container");
+      const footer = document.getElementById("footer-info");
+      if (data.count > 0) {
+        const div = document.createElement("div");
+        div.className = "bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded mb-2";
+        div.innerHTML = `<strong>${data.count} data lama</strong> telah dihapus pada <strong>${data.time}</strong>`;
+        container.appendChild(div);
+        footer.innerText = `${data.count} data lama dihapus pada ${data.time}`;
+        setTimeout(() => div.remove(), 5000);
+      } else {
+        footer.innerText = "Tidak ada data yang dihapus.";
+      }
+    });
+  </script>
+</body>
+</html>
