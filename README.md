@@ -1,3 +1,8 @@
+
+# Irsyad
+# nim : 312310512
+# kelas : T1 23 A2
+
 # stasiun-cuaca
 with esp32 s3 super mini
 
